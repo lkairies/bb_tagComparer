@@ -1,11 +1,10 @@
-from keras.models import model_from_json
+from diktya.func_api_helpers import load_model
 import numpy as np
 
 
 class Matcher():
-    def __init__(self, model_path, weights_path):
-        self.model = model_from_json(open(model_path).read())
-        self.model.load_weights(weights_path)
+    def __init__(self, model_path):
+        self.model = load_model(model_path)
         self.model._make_predict_function()
 
     @staticmethod
@@ -35,8 +34,8 @@ class Matcher():
             # 128 bit representation
             representation_a = np.array([representation_a])
             representation_b = np.array([representation_b])
-        return self.model.predict([representation_a,
-                                   representation_b])[0, 0]
+        return self.model.predict([representation_a.reshape((1, 128)),
+                                   representation_b.reshape((1,128))])[0, 0]
 
     def matchMany(self, representation_a, representations):
         if isinstance(representation_a, int):
