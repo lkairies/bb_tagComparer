@@ -9,7 +9,7 @@ class Matcher():
 
     @staticmethod
     def _int_to_bit_array(n, length):
-        bits = [1 if digit == '1' else 0 for digit in bin(n)[2:]]
+        bits = [1 if digit == '1' else -1 for digit in bin(n)[2:]]
         if len(bits) < length:
             bits = [0]*(length-len(bits)) + bits
         return bits
@@ -31,7 +31,7 @@ class Matcher():
                 Matcher._int_to_bit_array(rep, 8)
                 for rep in representation_b]).flatten()
         else:
-            # 128 bit representation
+            # 128 float32 representation
             representation_a = np.array([representation_a])
             representation_b = np.array([representation_b])
         return self.model.predict([representation_a.reshape((1, 128)),
@@ -59,7 +59,7 @@ class Matcher():
             representations_b = np.array(representations_b).reshape(
                 (len(representations), 128))
         else:
-            # 128 bit representation
+            # 128 float32 representation
             representations_a = np.array([representation_a] *
                                          len(representations))
             representations_b = representations
