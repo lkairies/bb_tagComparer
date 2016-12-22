@@ -3,7 +3,9 @@ import numpy as np
 
 
 class Matcher():
-    def __init__(self, model_path):
+    def __init__(self, model_path=None):
+        if model_path is None:
+            model_path = os.join.path(os.path.dirname(__file__), '../model/tag_matcher.model')
         self.model = load_model(model_path)
         self.model._make_predict_function()
 
