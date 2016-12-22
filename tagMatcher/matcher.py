@@ -14,54 +14,42 @@ class Matcher():
             bits = [0]*(length-len(bits)) + bits
         return bits
 
+    @staticmethod
+    def _representation_to_bit_representation(representation):
+        if isinstance(representation, int):
+            # int128 representation
+            representation = np.array(
+                Matcher._int_to_bit_array(representation, 128))
+        elif len(representation) == 16:
+            # representations from bb_binary format (16 uint8 values)
+            representation = np.array([
+                Matcher._int_to_bit_array(n, 8)
+                for n in representation]).flatten()
+        return representation
+
     # match two tags
     def match(self, representation_a, representation_b):
-        if isinstance(representation_a, int):
-            # int128 representation
-            representation_a = np.array([
-                Matcher._int_to_bit_array(representation_a, 128)])
-            representation_b = np.array([
-                Matcher._int_to_bit_array(representation_b, 128)])
-        elif len(representation_a) == 16:
-            # representations from bb_binary format (16 uint8 values)
-            representation_a = np.array([
-                Matcher._int_to_bit_array(rep, 8)
-                for rep in representation_a]).flatten()
-            representation_b = np.array([
-                Matcher._int_to_bit_array(rep, 8)
-                for rep in representation_b]).flatten()
-        else:
-            # 128 bit representation
-            representation_a = np.array([representation_a])
-            representation_b = np.array([representation_b])
+        representation_a = Matcher._representation_to_bit_representation(representation_a)
+        representation_b = Matcher._representation_to_bit_representation(representation_b)
         return self.model.predict([representation_a.reshape((1, 128)),
-                                   representation_b.reshape((1,128))])[0, 0]
+                                   representation_b.reshape((1, 128))])[0, 0]
 
-    def matchMany(self, representation_a, representations):
+    # match tags pairwise
+    def matchPairs(self, representations_a, representations_b):
+        assert len(representations_a) == len(representations_b), 'inputs do not have ' \
+            'the same length'
+        representations_a = np.array([Matcher._representation_to_bit_representation(representation)
+                                      for representation in representations_a])
+        representations_b = np.array([Matcher._representation_to_bit_representation(representation)
+                                      for representation in representations_b])
+        return self.model.predict([representations_a, representations_b]).flatten()
+
+    # match one tag with multiple tags
+    def matchMany(self, representation_a, representations_b):
+        representations_a = np.tile(representation_a, len(representations_b))
         if isinstance(representation_a, int):
-            # int128 representation
-            representations_a = np.array([Matcher._int_to_bit_array(
-                representation_a, 128)] * len(representations))
-            representations_b = np.array([Matcher._int_to_bit_array(rep, 128)
-                                          for rep in representations])
-        elif len(representation_a) == 16:
-            # representation from bb_binary format (16 unit8 values)
-            representations_a = np.array([Matcher._int_to_bit_array(rep, 8)
-                                          for rep in representation_a]
-                                         * len(representations))
-            representations_a = representations_a.reshape(
-                (len(representations), 128))
-            representations_b = []
-            for representation in representations:
-                representations_b.append(np.array([
-                    Matcher._int_to_bit_array(rep, 8)
-                    for rep in representation]))
-            representations_b = np.array(representations_b).reshape(
-                (len(representations), 128))
+            representation_a.reshape((len(representations_b, 1)))
         else:
-            # 128 bit representation
-            representations_a = np.array([representation_a] *
-                                         len(representations))
-            representations_b = representations
-        return self.model.predict(
-            [representations_a, representations_b]).flatten()
+            representations_a = representations_a.reshape((len(representations_b),
+                                                           len(representation_a)))
+        return self.matchPairs(representations_a, representations_b)
